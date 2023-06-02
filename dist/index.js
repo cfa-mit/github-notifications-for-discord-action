@@ -1,6 +1,56 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 6018:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AdapterRegistry = void 0;
+class AdapterRegistry {
+    constructor(adapters) {
+        this.adapters = adapters;
+    }
+    getAdapterForContext(context) {
+        return this.adapters.find(adapter => adapter.supportsEvent(context));
+    }
+}
+exports.AdapterRegistry = AdapterRegistry;
+
+
+/***/ }),
+
+/***/ 6963:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PullRequestAdapter = void 0;
+const utils_1 = __nccwpck_require__(1606);
+class PullRequestAdapter {
+    supportsEvent({ eventName }) {
+        return eventName === 'pull_request';
+    }
+    mapPayloadToEmbed({ actor }, { pull_request: { title, html_url, body }, number, action, sender: { avatar_url, html_url: github_profile_url, login } }) {
+        return {
+            title: `Pull request ${(0, utils_1.toHumanReadable)(action)}: #${number} ${title}`,
+            url: html_url,
+            author: {
+                name: login,
+                icon_url: avatar_url,
+                url: github_profile_url
+            },
+            description: body
+        };
+    }
+}
+exports.PullRequestAdapter = PullRequestAdapter;
+
+
+/***/ }),
+
 /***/ 3109:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -45,32 +95,23 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5438);
 const axios_1 = __importDefault(__nccwpck_require__(8757));
-const toHumanReadable = (action) => action.split('_').join(' ');
+const adapters_1 = __nccwpck_require__(6018);
+const pull_request_1 = __nccwpck_require__(6963);
+const adapterRegistry = new adapters_1.AdapterRegistry([new pull_request_1.PullRequestAdapter()]);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            if (github_1.context.eventName === 'pull_request') {
-                const payload = github_1.context.payload;
-                const exampleEmbed = {
-                    color: 0x63a18f,
-                    title: `Pull request ${toHumanReadable(payload.action)}: #${payload.number} ${payload.pull_request.title}`,
-                    url: payload.pull_request.html_url,
-                    author: {
-                        name: github_1.context.actor,
-                        icon_url: `https://avatars.githubusercontent.com/${github_1.context.actor}`,
-                        url: `https://github.com/${github_1.context.actor}`
-                    },
-                    description: payload.pull_request.body
-                };
-                console.log(JSON.stringify(exampleEmbed));
-                const discordWebhook = core.getInput('discord_webhook');
-                yield axios_1.default.post(`${discordWebhook}?wait=true`, JSON.stringify({ embeds: [exampleEmbed] }), {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-GitHub-Event': process.env.GITHUB_EVENT_NAME
-                    }
-                });
+            const adapter = adapterRegistry.getAdapterForContext(github_1.context);
+            if (!adapter) {
+                throw new Error('Github event not supported');
             }
+            const embed = adapter.mapPayloadToEmbed(github_1.context, github_1.context.payload);
+            const discordWebhook = core.getInput('discord_webhook');
+            yield axios_1.default.post(`${discordWebhook}?wait=true`, JSON.stringify({ embeds: [embed] }), {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
         }
         catch (error) {
             if (error instanceof Error)
@@ -79,6 +120,44 @@ function run() {
     });
 }
 run();
+
+
+/***/ }),
+
+/***/ 1606:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__nccwpck_require__(3198), exports);
+
+
+/***/ }),
+
+/***/ 3198:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.toHumanReadable = void 0;
+const toHumanReadable = (action) => action.split('_').join(' ');
+exports.toHumanReadable = toHumanReadable;
 
 
 /***/ }),
