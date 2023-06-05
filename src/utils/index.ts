@@ -1,1 +1,1 @@
-export * from './to-human-readable'
+export * from './to-human-readable';

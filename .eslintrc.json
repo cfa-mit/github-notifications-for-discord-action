@@ -8,6 +8,7 @@
       "project": "./tsconfig.json"
     },
     "rules": {
+      "semi":"error",
       "i18n-text/no-en": "off",
       "eslint-comments/no-use": "off",
       "import/no-namespace": "off",
@@ -49,5 +50,12 @@
       "node": true,
       "es6": true,
       "jest/globals": true
+    },
+    "settings": {
+      "import/resolver": {
+        "node": {
+          "extensions": [".js", ".ts", ".d.ts"]
+        }
+      }
     }
   }

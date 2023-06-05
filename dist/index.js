@@ -1,44 +1,7 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 3471:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.DeploymentStatusAdapter = void 0;
-const __1 = __nccwpck_require__(6018);
-const utils_1 = __nccwpck_require__(1606);
-const EMOJI_STATE_MAPPING = {
-    success: '✅',
-    error: '❌',
-    failure: '❌',
-    in_progress: '⌛️'
-};
-class DeploymentStatusAdapter extends __1.AbstractAdapter {
-    constructor() {
-        super(...arguments);
-        this.eventName = 'deployment_status';
-    }
-    mapPayloadToEmbed({ deployment_status: { state, environment }, sender: { avatar_url, html_url: github_profile_url, login }, workflow_run: { html_url }, repository: { full_name } }) {
-        return {
-            title: `[${full_name}] Deployment for environment **${environment}**: ${(0, utils_1.toHumanReadable)(state)} ${EMOJI_STATE_MAPPING[state]}`,
-            url: html_url,
-            author: {
-                name: login,
-                icon_url: avatar_url,
-                url: github_profile_url
-            }
-        };
-    }
-}
-exports.DeploymentStatusAdapter = DeploymentStatusAdapter;
-
-
-/***/ }),
-
-/***/ 6018:
+/***/ 1603:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -64,6 +27,72 @@ exports.AdapterRegistry = AdapterRegistry;
 
 /***/ }),
 
+/***/ 3471:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DeploymentStatusAdapter = void 0;
+const adapter_1 = __nccwpck_require__(1603);
+const DEPLOYMENT_STATE_MAPPING = {
+    success: { color: 0x07c300, label: 'succeeded ✅' },
+    error: { color: 0xcc0202, label: 'errored ❌' },
+    failure: { color: 0xcc0202, label: 'failed ❌' },
+    in_progress: { label: 'in progress' }
+};
+class DeploymentStatusAdapter extends adapter_1.AbstractAdapter {
+    constructor() {
+        super(...arguments);
+        this.eventName = 'deployment_status';
+    }
+    mapPayloadToEmbed({ deployment_status: { state, environment }, sender: { avatar_url, html_url: github_profile_url, login }, workflow_run: { html_url }, repository: { full_name } }) {
+        const { color, label } = DEPLOYMENT_STATE_MAPPING[state];
+        return {
+            title: `[${full_name}] Deployment for environment **${environment}** ${label}`,
+            url: html_url,
+            author: {
+                name: login,
+                icon_url: avatar_url,
+                url: github_profile_url
+            },
+            color
+        };
+    }
+}
+exports.DeploymentStatusAdapter = DeploymentStatusAdapter;
+
+
+/***/ }),
+
+/***/ 6018:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__nccwpck_require__(3471), exports);
+__exportStar(__nccwpck_require__(6963), exports);
+__exportStar(__nccwpck_require__(4485), exports);
+__exportStar(__nccwpck_require__(1603), exports);
+
+
+/***/ }),
+
 /***/ 4485:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -71,13 +100,13 @@ exports.AdapterRegistry = AdapterRegistry;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PullRequestReviewAdapter = void 0;
-const __1 = __nccwpck_require__(6018);
+const adapter_1 = __nccwpck_require__(1603);
 const PULL_REQUEST_REVIEW_STATE_MAPPING = {
     approved: { color: 0x07c300, message: 'approved changes ✅' },
     changes_requested: { color: 0xcc0202, message: 'requested changes ❌' },
     commented: { message: 'commented 💬' }
 };
-class PullRequestReviewAdapter extends __1.AbstractAdapter {
+class PullRequestReviewAdapter extends adapter_1.AbstractAdapter {
     constructor() {
         super(...arguments);
         this.eventName = 'pull_request_review';
@@ -108,16 +137,16 @@ exports.PullRequestReviewAdapter = PullRequestReviewAdapter;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PullRequestAdapter = void 0;
-const __1 = __nccwpck_require__(6018);
+const adapter_1 = __nccwpck_require__(1603);
 const utils_1 = __nccwpck_require__(1606);
-class PullRequestAdapter extends __1.AbstractAdapter {
+class PullRequestAdapter extends adapter_1.AbstractAdapter {
     constructor() {
         super(...arguments);
         this.eventName = 'pull_request';
     }
-    mapPayloadToEmbed({ pull_request: { title, html_url, body }, number, action, sender: { avatar_url, html_url: github_profile_url, login } }) {
+    mapPayloadToEmbed({ pull_request: { title, html_url, body }, number, action, sender: { avatar_url, html_url: github_profile_url, login }, repository: { full_name } }) {
         return {
-            title: `Pull request ${(0, utils_1.toHumanReadable)(action)}: #${number} ${title}`,
+            title: `[${full_name}] Pull request ${(0, utils_1.toHumanReadable)(action)}: #${number} ${title}`,
             url: html_url,
             author: {
                 name: login,
@@ -129,6 +158,78 @@ class PullRequestAdapter extends __1.AbstractAdapter {
     }
 }
 exports.PullRequestAdapter = PullRequestAdapter;
+
+
+/***/ }),
+
+/***/ 173:
+/***/ (function(__unused_webpack_module, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DiscordClient = void 0;
+class DiscordClient {
+    constructor(webhookUrl, axios) {
+        this.webhookUrl = webhookUrl;
+        this.axios = axios;
+    }
+    sendMessage(embed) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.axios.post(this.webhookUrl, JSON.stringify({ embeds: [embed] }), {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        });
+    }
+}
+exports.DiscordClient = DiscordClient;
+
+
+/***/ }),
+
+/***/ 9159:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__nccwpck_require__(385), exports);
+__exportStar(__nccwpck_require__(173), exports);
+
+
+/***/ }),
+
+/***/ 385:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 
 /***/ }),
@@ -178,35 +279,25 @@ const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5438);
 const axios_1 = __importDefault(__nccwpck_require__(8757));
 const adapters_1 = __nccwpck_require__(6018);
-const pull_request_1 = __nccwpck_require__(6963);
-const deployment_status_1 = __nccwpck_require__(3471);
-const pull_request_review_1 = __nccwpck_require__(4485);
+const discord_1 = __nccwpck_require__(9159);
 const adapterRegistry = new adapters_1.AdapterRegistry([
-    new pull_request_1.PullRequestAdapter(),
-    new deployment_status_1.DeploymentStatusAdapter(),
-    new pull_request_review_1.PullRequestReviewAdapter()
+    new adapters_1.PullRequestAdapter(),
+    new adapters_1.DeploymentStatusAdapter(),
+    new adapters_1.PullRequestReviewAdapter()
 ]);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // context.eventName = 'deployment_status'
-            // context.payload = payloadTest
             const adapter = adapterRegistry.getAdapterForContext(github_1.context);
             if (!adapter) {
-                throw new Error(`Event not supported. Here's the list of supported events: ${adapterRegistry.adapters
+                throw new Error(`Event not supported. This is the list of supported events: ${adapterRegistry.adapters
                     .map(({ eventName }) => eventName)
                     .toString()}`);
             }
             const { payload } = github_1.context;
             const embed = adapter.mapPayloadToEmbed(payload);
-            const discordWebhook = core.getInput('discord_webhook');
-            // const discordWebhook =
-            //   'https://discord.com/api/webhooks/1098905611082665984/IKsraGKkCalg5ChQJ3okKqO-Zvlr_mPlO3DeoAjjh5jyzE3hhAJxzNh-nANGM0aGWGEO'
-            yield axios_1.default.post(`${discordWebhook}?wait=true&thread_id=yo`, JSON.stringify({ embeds: [embed] }), {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
+            const client = new discord_1.DiscordClient(core.getInput('discord_webhook'), axios_1.default);
+            yield client.sendMessage(embed);
         }
         catch (error) {
             if (error instanceof Error)
