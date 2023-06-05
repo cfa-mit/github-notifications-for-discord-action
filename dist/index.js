@@ -1,13 +1,56 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 3471:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DeploymentStatusAdapter = void 0;
+const __1 = __nccwpck_require__(6018);
+const utils_1 = __nccwpck_require__(1606);
+const EMOJI_STATE_MAPPING = {
+    success: '✅',
+    error: '❌',
+    failure: '❌',
+    in_progress: '⌛️'
+};
+class DeploymentStatusAdapter extends __1.AbstractAdapter {
+    constructor() {
+        super(...arguments);
+        this.eventName = 'deployment_status';
+    }
+    mapPayloadToEmbed({ deployment_status: { state, environment }, sender: { avatar_url, html_url: github_profile_url, login }, workflow_run: { html_url }, repository: { full_name } }) {
+        return {
+            title: `[${full_name}] Deployment for environment **${environment}**: ${(0, utils_1.toHumanReadable)(state)} ${EMOJI_STATE_MAPPING[state]}`,
+            url: html_url,
+            author: {
+                name: login,
+                icon_url: avatar_url,
+                url: github_profile_url
+            }
+        };
+    }
+}
+exports.DeploymentStatusAdapter = DeploymentStatusAdapter;
+
+
+/***/ }),
+
 /***/ 6018:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.AdapterRegistry = void 0;
+exports.AdapterRegistry = exports.AbstractAdapter = void 0;
+class AbstractAdapter {
+    supportsEvent({ eventName }) {
+        return this.eventName === eventName;
+    }
+}
+exports.AbstractAdapter = AbstractAdapter;
 class AdapterRegistry {
     constructor(adapters) {
         this.adapters = adapters;
@@ -21,6 +64,43 @@ exports.AdapterRegistry = AdapterRegistry;
 
 /***/ }),
 
+/***/ 4485:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.PullRequestReviewAdapter = void 0;
+const __1 = __nccwpck_require__(6018);
+const PULL_REQUEST_REVIEW_STATE_MAPPING = {
+    approved: { color: 0x07c300, message: 'approved changes ✅' },
+    changes_requested: { color: 0xcc0202, message: 'requested changes ❌' },
+    commented: { message: 'commented 💬' }
+};
+class PullRequestReviewAdapter extends __1.AbstractAdapter {
+    constructor() {
+        super(...arguments);
+        this.eventName = 'pull_request_review';
+    }
+    mapPayloadToEmbed({ pull_request: { title, number }, review: { state, html_url }, sender: { avatar_url, html_url: github_profile_url, login }, repository: { full_name } }) {
+        const { message, color } = PULL_REQUEST_REVIEW_STATE_MAPPING[state];
+        return {
+            title: `[${full_name}] ${login} ${message}: #${number} ${title}`,
+            url: html_url,
+            author: {
+                name: login,
+                icon_url: avatar_url,
+                url: github_profile_url
+            },
+            color
+        };
+    }
+}
+exports.PullRequestReviewAdapter = PullRequestReviewAdapter;
+
+
+/***/ }),
+
 /***/ 6963:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -28,12 +108,14 @@ exports.AdapterRegistry = AdapterRegistry;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PullRequestAdapter = void 0;
+const __1 = __nccwpck_require__(6018);
 const utils_1 = __nccwpck_require__(1606);
-class PullRequestAdapter {
-    supportsEvent({ eventName }) {
-        return eventName === 'pull_request';
+class PullRequestAdapter extends __1.AbstractAdapter {
+    constructor() {
+        super(...arguments);
+        this.eventName = 'pull_request';
     }
-    mapPayloadToEmbed({ actor }, { pull_request: { title, html_url, body }, number, action, sender: { avatar_url, html_url: github_profile_url, login } }) {
+    mapPayloadToEmbed({ pull_request: { title, html_url, body }, number, action, sender: { avatar_url, html_url: github_profile_url, login } }) {
         return {
             title: `Pull request ${(0, utils_1.toHumanReadable)(action)}: #${number} ${title}`,
             url: html_url,
@@ -97,17 +179,30 @@ const github_1 = __nccwpck_require__(5438);
 const axios_1 = __importDefault(__nccwpck_require__(8757));
 const adapters_1 = __nccwpck_require__(6018);
 const pull_request_1 = __nccwpck_require__(6963);
-const adapterRegistry = new adapters_1.AdapterRegistry([new pull_request_1.PullRequestAdapter()]);
+const deployment_status_1 = __nccwpck_require__(3471);
+const pull_request_review_1 = __nccwpck_require__(4485);
+const adapterRegistry = new adapters_1.AdapterRegistry([
+    new pull_request_1.PullRequestAdapter(),
+    new deployment_status_1.DeploymentStatusAdapter(),
+    new pull_request_review_1.PullRequestReviewAdapter()
+]);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            // context.eventName = 'deployment_status'
+            // context.payload = payloadTest
             const adapter = adapterRegistry.getAdapterForContext(github_1.context);
             if (!adapter) {
-                throw new Error('Github event not supported');
+                throw new Error(`Event not supported. Here's the list of supported events: ${adapterRegistry.adapters
+                    .map(({ eventName }) => eventName)
+                    .toString()}`);
             }
-            const embed = adapter.mapPayloadToEmbed(github_1.context, github_1.context.payload);
+            const { payload } = github_1.context;
+            const embed = adapter.mapPayloadToEmbed(payload);
             const discordWebhook = core.getInput('discord_webhook');
-            yield axios_1.default.post(`${discordWebhook}?wait=true`, JSON.stringify({ embeds: [embed] }), {
+            // const discordWebhook =
+            //   'https://discord.com/api/webhooks/1098905611082665984/IKsraGKkCalg5ChQJ3okKqO-Zvlr_mPlO3DeoAjjh5jyzE3hhAJxzNh-nANGM0aGWGEO'
+            yield axios_1.default.post(`${discordWebhook}?wait=true&thread_id=yo`, JSON.stringify({ embeds: [embed] }), {
                 headers: {
                     'Content-Type': 'application/json'
                 }

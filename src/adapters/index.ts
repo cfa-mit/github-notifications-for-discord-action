@@ -9,18 +9,22 @@ export interface Embed {
     icon_url: string
     url: string
   }
-  description: string
+  description?: string
+  color?: number
 }
 
-export interface AdapterInterface {
-  supportsEvent(context: Context): boolean
-  mapPayloadToEmbed(context: Context, payload: WebhookPayload): Embed
+export abstract class AbstractAdapter {
+  abstract readonly eventName: string
+  supportsEvent({eventName}: Context): boolean {
+    return this.eventName === eventName
+  }
+  abstract mapPayloadToEmbed(payload: WebhookPayload): Embed
 }
 
 export class AdapterRegistry {
-  constructor(private readonly adapters: AdapterInterface[]) {}
+  constructor(readonly adapters: AbstractAdapter[]) {}
 
-  getAdapterForContext(context: Context): AdapterInterface | undefined {
+  getAdapterForContext(context: Context): AbstractAdapter | undefined {
     return this.adapters.find(adapter => adapter.supportsEvent(context))
   }
 }
