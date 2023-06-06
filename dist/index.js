@@ -9,7 +9,7 @@ require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AdapterRegistry = exports.AbstractAdapter = void 0;
 class AbstractAdapter {
-    supportsEvent({ eventName }) {
+    doesSupportEvent({ eventName }) {
         return this.eventName === eventName;
     }
 }
@@ -19,7 +19,7 @@ class AdapterRegistry {
         this.adapters = adapters;
     }
     getAdapterForContext(context) {
-        return this.adapters.find(adapter => adapter.supportsEvent(context));
+        return this.adapters.find(adapter => adapter.doesSupportEvent(context));
     }
 }
 exports.AdapterRegistry = AdapterRegistry;

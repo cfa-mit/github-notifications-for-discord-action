@@ -3,7 +3,7 @@ import {
   sender,
   deploymentStatus,
   workflowRun
-} from '../../test-utils/mockData';
+} from '../../test-utils/mock-data';
 import { DeploymentStatusAdapter, DeploymentEvent } from '.';
 
 const eventMock = {

@@ -4,7 +4,7 @@ import {
   repository,
   sender,
   review
-} from '../../test-utils/mockData';
+} from '../../test-utils/mock-data';
 import { PullRequestReviewAdapter } from '.';
 
 const eventMock = {
