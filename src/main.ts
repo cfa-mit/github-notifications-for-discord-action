@@ -1,19 +1,40 @@
-import * as core from '@actions/core'
-import {wait} from './wait'
+import * as core from '@actions/core';
+import { context } from '@actions/github';
+import axios from 'axios';
+import {
+  AdapterRegistry,
+  PullRequestAdapter,
+  DeploymentStatusAdapter,
+  PullRequestReviewAdapter
+} from './adapters';
+import { DiscordClient } from './discord';
+
+const adapterRegistry = new AdapterRegistry([
+  new PullRequestAdapter(),
+  new DeploymentStatusAdapter(),
+  new PullRequestReviewAdapter()
+]);
 
 async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
+    const adapter = adapterRegistry.getAdapterForContext(context);
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    if (!adapter) {
+      throw new Error(
+        `Event not supported. This is the list of supported events: ${adapterRegistry.adapters
+          .map(({ eventName }) => eventName)
+          .toString()}`
+      );
+    }
 
-    core.setOutput('time', new Date().toTimeString())
+    const { payload } = context;
+    const embed = adapter.mapPayloadToEmbed(payload);
+    const client = new DiscordClient(core.getInput('discord_webhook'), axios);
+
+    await client.sendMessage(embed);
   } catch (error) {
-    if (error instanceof Error) core.setFailed(error.message)
+    if (error instanceof Error) core.setFailed(error.message);
   }
 }
 
-run()
+run();
